@@ -22,14 +22,18 @@ describe("Observable", function () {
     });
 
     it("should able to map values", function () {
-        obsv.map(function (x) {return x + 1;})
+        obsv.map(function (x) {
+            return x + 1;
+        })
             .subscribe(listener);
         obsv.emit(50);
         assert(listener.calledWith(51));
     });
 
-    it("should be able to filter values", function(){
-        obsv.filter(function (x) { return x > 100;})
+    it("should be able to filter values", function () {
+        obsv.filter(function (x) {
+            return x > 100;
+        })
             .subscribe(listener);
         obsv.emit(50);
         obsv.emit(200);
@@ -38,10 +42,10 @@ describe("Observable", function () {
         assert(listener.calledWith(200));
     });
 
-    it("should be able to flatten", function(){
+    it("should be able to flatten", function () {
         obsv.flatten()
             .subscribe(listener);
-        obsv.emit([1,2,3]);
+        obsv.emit([1, 2, 3]);
 
         assert(listener.callCount === 3);
         assert(listener.calledWith(1));
@@ -49,8 +53,10 @@ describe("Observable", function () {
         assert(listener.calledWith(3));
     });
 
-    it("should be able to flatMap", function(){
-        obsv.flatMap(function(str){ return str.split("");})
+    it("should be able to flatMap", function () {
+        obsv.flatMap(function (str) {
+            return str.split("");
+        })
             .subscribe(listener);
         obsv.emit("str");
 
@@ -60,12 +66,12 @@ describe("Observable", function () {
         assert(listener.calledWith("r"));
     });
 
-    it("should be able to async map", function(){
-        obsv.map(function(x, done){
-                setTimeout(function(){
-                    done(x+1)
-                },1)
-            })
+    it("should be able to async map", function () {
+        obsv.map(function (x, done) {
+            setTimeout(function () {
+                done(x + 1)
+            }, 1)
+        })
             .subscribe(listener);
         obsv.emit(10);
 
@@ -73,12 +79,12 @@ describe("Observable", function () {
         assert(listener.calledWith(11));
     });
 
-    it("should be able to async flatMap", function(){
-        obsv.flatMap(function(str, done){
-                setTimeout(function(){
-                    done(str.split(""))
-                },1)
-            })
+    it("should be able to async flatMap", function () {
+        obsv.flatMap(function (str, done) {
+            setTimeout(function () {
+                done(str.split(""))
+            }, 1)
+        })
             .subscribe(listener);
 
         obsv.emit("ok");
@@ -89,7 +95,7 @@ describe("Observable", function () {
         assert(listener.calledWith("k"));
     });
 
-    it("should be able to combine", function(){
+    it("should be able to combine", function () {
         var s1 = Observable.create();
         var s2 = Observable.create();
         var s3 = Observable.combine([s1, s2]);
@@ -102,5 +108,36 @@ describe("Observable", function () {
         assert(listener.callCount === 2);
         assert(listener.calledWith(1));
         assert(listener.calledWith(2));
+    });
+
+    it("should be able to create an Observable from a function", function () {
+        var sayHello = function (firstName, lastName) {
+            return "hello " + firstName + " " + lastName + "!";
+        };
+        var sayHelloObservable = Observable.fromFunction(sayHello);
+        sayHelloObservable("foo", "bar").subscribe(listener);
+        clock.tick(100);
+        assert(listener.calledWith("hello foo bar!"));
+    });
+
+    it("should be able to create an Observable from a function with a callback", function () {
+        var addOne = function (number, callback) {
+            callback(number + 1);
+        };
+        var addOneObservable = Observable.fromCallbackFunction(addOne);
+        addOneObservable(1).subscribe(listener);
+        clock.tick(100);
+        assert(listener.calledWith(2));
+    });
+
+
+    it("should be able to create an Observable from a NodeJs style function with a callback", function () {
+        var shout = function (text, callback) {
+            callback(null, text.toUpperCase()+"!");
+        };
+        var shoutObservable = Observable.fromNodeCallbackFunction(shout);
+        shoutObservable("what?").subscribe(listener);
+        clock.tick(100);
+        assert(listener.calledWith("WHAT?!"));
     });
 });

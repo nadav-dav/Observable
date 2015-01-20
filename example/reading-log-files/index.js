@@ -2,8 +2,9 @@ var fs = require('fs');
 var readline = require('readline');
 var Observable = require("../../");
 
+var readDir = Observable.fromNodeCallbackFunction(fs.readdir);
 
-var filesInFolder   = readDir(__dirname);
+var filesInFolder   = readDir(__dirname).flatten();
 var logFiles        = filesInFolder.filter(isAccessLog);
 var logLines        = logFiles.map(readFileLines);
 var logEntries      = logLines.map(parseLine);
@@ -41,10 +42,3 @@ function isErrorEntry (entry){
     return entry.status >= 400
 }
 
-function readDir (path) {
-    var s = new Observable.create();
-    fs.readdir(path, function(err, filesArray){
-        s.emit(filesArray);
-    });
-    return s.flatten();
-}
