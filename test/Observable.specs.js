@@ -122,7 +122,9 @@ describe("Observable", function () {
 
     it("should be able to create an Observable from a function with a callback", function () {
         var addOne = function (number, callback) {
-            callback(number + 1);
+            setTimeout(function() {
+                callback(number + 1);
+            },10);
         };
         var addOneObservable = Observable.fromCallbackFunction(addOne);
         addOneObservable(1).subscribe(listener);
@@ -133,7 +135,9 @@ describe("Observable", function () {
 
     it("should be able to create an Observable from a NodeJs style function with a callback", function () {
         var shout = function (text, callback) {
-            callback(null, text.toUpperCase()+"!");
+            setTimeout(function(){
+                callback(null, text.toUpperCase()+"!");
+            },10);
         };
         var shoutObservable = Observable.fromNodeCallbackFunction(shout);
         shoutObservable("what?").subscribe(listener);
