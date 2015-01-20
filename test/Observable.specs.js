@@ -15,9 +15,9 @@ describe("Observable", function () {
         clock.restore();
     });
 
-    it("should be able to emit and subscribe to data", function () {
+    it("should be able to send and subscribe to data", function () {
         obsv.subscribe(listener);
-        obsv.emit("hello");
+        obsv.send("hello");
         assert(listener.calledWith("hello"));
     });
 
@@ -26,7 +26,7 @@ describe("Observable", function () {
             return x + 1;
         })
             .subscribe(listener);
-        obsv.emit(50);
+        obsv.send(50);
         assert(listener.calledWith(51));
     });
 
@@ -35,8 +35,8 @@ describe("Observable", function () {
             return x > 100;
         })
             .subscribe(listener);
-        obsv.emit(50);
-        obsv.emit(200);
+        obsv.send(50);
+        obsv.send(200);
 
         assert(listener.calledOnce);
         assert(listener.calledWith(200));
@@ -45,7 +45,7 @@ describe("Observable", function () {
     it("should be able to flatten", function () {
         obsv.flatten()
             .subscribe(listener);
-        obsv.emit([1, 2, 3]);
+        obsv.send([1, 2, 3]);
 
         assert(listener.callCount === 3);
         assert(listener.calledWith(1));
@@ -58,7 +58,7 @@ describe("Observable", function () {
             return str.split("");
         })
             .subscribe(listener);
-        obsv.emit("str");
+        obsv.send("str");
 
         assert(listener.callCount === 3);
         assert(listener.calledWith("s"));
@@ -67,27 +67,27 @@ describe("Observable", function () {
     });
 
     it("should be able to async map", function () {
-        obsv.map(function (x, done) {
+        obsv.map(function (x, send) {
             setTimeout(function () {
-                done(x + 1)
+                send(x + 1)
             }, 1)
         })
             .subscribe(listener);
-        obsv.emit(10);
+        obsv.send(10);
 
         clock.tick(100);
         assert(listener.calledWith(11));
     });
 
     it("should be able to async flatMap", function () {
-        obsv.flatMap(function (str, done) {
+        obsv.flatMap(function (str, send) {
             setTimeout(function () {
-                done(str.split(""))
+                send(str.split(""))
             }, 1)
         })
             .subscribe(listener);
 
-        obsv.emit("ok");
+        obsv.send("ok");
 
         clock.tick(100);
         assert(listener.callCount === 2);
@@ -102,46 +102,21 @@ describe("Observable", function () {
 
         s3.subscribe(listener);
 
-        s1.emit(1);
-        s2.emit(2);
+        s1.send(1);
+        s2.send(2);
 
         assert(listener.callCount === 2);
         assert(listener.calledWith(1));
         assert(listener.calledWith(2));
     });
 
-    it("should be able to create an Observable from a function", function () {
-        var sayHello = function (firstName, lastName) {
-            return "hello " + firstName + " " + lastName + "!";
-        };
-        var sayHelloObservable = Observable.fromFunction(sayHello);
-        sayHelloObservable("foo", "bar").subscribe(listener);
-        clock.tick(100);
-        assert(listener.calledWith("hello foo bar!"));
-    });
+    it("should be able to pipe Observables", function(){
+        var s1 = Observable.create();
+        var s2 = Observable.create();
+        s1.pipe(s2);
+        s2.subscribe(listener);
 
-    it("should be able to create an Observable from a function with a callback", function () {
-        var addOne = function (number, callback) {
-            setTimeout(function() {
-                callback(number + 1);
-            },10);
-        };
-        var addOneObservable = Observable.fromCallbackFunction(addOne);
-        addOneObservable(1).subscribe(listener);
-        clock.tick(100);
-        assert(listener.calledWith(2));
-    });
-
-
-    it("should be able to create an Observable from a NodeJs style function with a callback", function () {
-        var shout = function (text, callback) {
-            setTimeout(function(){
-                callback(null, text.toUpperCase()+"!");
-            },10);
-        };
-        var shoutObservable = Observable.fromNodeCallbackFunction(shout);
-        shoutObservable("what?").subscribe(listener);
-        clock.tick(100);
-        assert(listener.calledWith("WHAT?!"));
+        s1.send("hello");
+        assert(listener.calledWith("hello"));
     });
 });

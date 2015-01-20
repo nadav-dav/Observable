@@ -11,60 +11,13 @@ Observable.combine = function (observables) {
     var s = Observable.create();
     observables.forEach(function(observable){
         observable.subscribe(function (value) {
-            s.emit(value);
+            s.send(value);
         });
     });
     return s;
 };
 
-// CREATION FROM FUNCTIONS
-Observable.fromFunction = function(func){
-    return function(/*arguments*/){
-        var args = Array.prototype.slice.call(arguments);
-        var s = Observable.create();
-        setTimeout(function(){
-            // we add a "setTimeout" in order to make sure
-            // the emit is called after we register the listener
-            s.emit(func.apply(func, args));
-        },0);
-        return s;
-    };
-};
-
-Observable.fromCallbackFunction = function(func){
-    return function(/*arguments*/){
-        var args = Array.prototype.slice.call(arguments);
-        var s = Observable.create();
-        var callback = function(result){
-            s.emit(result);
-        };
-        setTimeout(function(){
-            // we add a "setTimeout" in order to make sure
-            // the emit is called after we register the listener
-            func.apply(func, args.concat(callback));
-        },0);
-        return s;
-    };
-};
-
-Observable.fromNodeCallbackFunction = function(func){
-    return function(/*arguments*/){
-        var args = Array.prototype.slice.call(arguments);
-        var s = Observable.create();
-        var callback = function(err, result){
-            s.emit(result);
-        };
-        setTimeout(function(){
-            // we add a "setTimeout" in order to make sure
-            // the emit is called after we register the listener
-            func.apply(func, args.concat(callback));
-        },0);
-        return s;
-    };
-};
-
-
-Observable.prototype.emit = function (data) {
+Observable.prototype.send = function (data) {
     this._listeners.forEach(function (listener) {
         listener(data);
     })
@@ -78,7 +31,7 @@ Observable.prototype.filter = function (filterFunction) {
     var s = Observable.create();
     this.subscribe(function (value) {
         if (filterFunction(value)){
-            s.emit(value);
+            s.send(value);
         }
     });
     return s;
@@ -89,7 +42,7 @@ Observable.prototype.flatten = function () {
     this.subscribe(function (arrValue) {
         if (arrValue instanceof Array){
             arrValue.forEach(function(value){
-                s.emit(value);
+                s.send(value);
             });
         }
     });
@@ -102,14 +55,14 @@ Observable.prototype.map = function (mappingFunction) {
     //sync function
     if (mappingFunction.length === 1){
         this.subscribe(function (value) {
-            s.emit(mappingFunction(value));
+            s.send(mappingFunction(value));
         });
     }
     //async function
     if (mappingFunction.length === 2){
         this.subscribe(function (value) {
             mappingFunction(value, function(mappedValue){
-                s.emit(mappedValue);
+                s.send(mappedValue);
             });
         });
     }
@@ -119,6 +72,12 @@ Observable.prototype.map = function (mappingFunction) {
 
 Observable.prototype.flatMap = function (mappingFunction) {
     return this.map(mappingFunction).flatten();
+};
+
+Observable.prototype.pipe = function(anotherObservable){
+    this.subscribe(function(data){
+        anotherObservable.send(data);
+    });
 };
 
 module.exports = Observable;
