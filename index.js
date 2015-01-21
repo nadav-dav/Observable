@@ -6,10 +6,18 @@ function Observable() {
 }
 
 // CREATION
+/**
+ * @returns {Observable}
+ */
 Observable.create = function () {
     return new Observable();
 };
 
+/**
+ *
+ * @param observables
+ * @returns {Observable}
+ */
 Observable.combine = function (observables) {
     var s = Observable.create();
     observables.forEach(function (observable) {
@@ -20,6 +28,10 @@ Observable.combine = function (observables) {
     return s;
 };
 
+/**
+ * @param data
+ * @returns {Observable}
+ */
 Observable.prototype.send = function (data) {
     this._listeners.forEach(function (listener) {
         listener(data);
@@ -27,6 +39,9 @@ Observable.prototype.send = function (data) {
     return this;
 };
 
+/**
+ * @returns {Observable}
+ */
 Observable.prototype.end = function () {
     this._endListeners.forEach(function (listener) {
         listener();
@@ -37,6 +52,11 @@ Observable.prototype.end = function () {
     return this;
 };
 
+/**
+ * @param error
+ * @param {Observable} root
+ * @returns {Observable}
+ */
 Observable.prototype.error = function (error, root) {
     if(root === undefined){
         root = this;
@@ -50,6 +70,11 @@ Observable.prototype.error = function (error, root) {
     return this;
 };
 
+/**
+ * @param type
+ * @param listener
+ * @returns {Observable}
+ */
 Observable.prototype.on = function (type, listener) {
     if (type === "data")    this._listeners.push(listener);
     if (type === "end")     this._endListeners.push(listener);
@@ -58,6 +83,10 @@ Observable.prototype.on = function (type, listener) {
     return this;
 };
 
+/**
+ * @param filterFunction
+ * @returns {Observable}
+ */
 Observable.prototype.filter = function (filterFunction) {
     var s = this._clone();
     this.on("data", function (value) {
@@ -68,6 +97,9 @@ Observable.prototype.filter = function (filterFunction) {
     return s;
 };
 
+/**
+ * @returns {Observable}
+ */
 Observable.prototype.flatten = function () {
     var s = this._clone();
     this.on("data", function (arrValue) {
@@ -80,6 +112,10 @@ Observable.prototype.flatten = function () {
     return s;
 };
 
+/**
+ * @param mappingFunction
+ * @returns {Observable}
+ */
 Observable.prototype.map = function (mappingFunction) {
     var s = this._clone();
 
@@ -99,10 +135,17 @@ Observable.prototype.map = function (mappingFunction) {
     return s;
 };
 
+/**
+ * @param mappingFunction
+ * @returns {Observable}
+ */
 Observable.prototype.flatMap = function (mappingFunction) {
     return this.map(mappingFunction).flatten();
 };
 
+/**
+ * @param {Observable} anotherObservable
+ */
 Observable.prototype.pipe = function (anotherObservable) {
     this.on("data", function (data) {
         anotherObservable.send(data);
