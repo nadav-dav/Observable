@@ -17,7 +17,7 @@ errorEntries
     .on("data", countLines)
     .on("error", console.error)
     .on("end", function () {
-        console.log("\n\n", "Counted", linesCounted, "line!!");
+        console.log("\n\n", "Counted", linesCounted, "lines!");
     });
 
 // DROP A PENNY IN ONE END AND LET IT ROLL!
