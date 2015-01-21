@@ -16,7 +16,7 @@ describe("Observable", function () {
     });
 
     it("should be able to send and subscribe to data", function () {
-        obsv.subscribe(listener);
+        obsv.on("data", listener);
         obsv.send("hello");
         assert(listener.calledWith("hello"));
     });
@@ -25,7 +25,7 @@ describe("Observable", function () {
         obsv.map(function (x) {
             return x + 1;
         })
-            .subscribe(listener);
+            .on("data", listener);
         obsv.send(50);
         assert(listener.calledWith(51));
     });
@@ -34,9 +34,9 @@ describe("Observable", function () {
         obsv.filter(function (x) {
             return x > 100;
         })
-            .subscribe(listener);
-        obsv.send(50);
-        obsv.send(200);
+            .on("data", listener);
+
+        obsv.send(50).send(200);
 
         assert(listener.calledOnce);
         assert(listener.calledWith(200));
@@ -44,7 +44,7 @@ describe("Observable", function () {
 
     it("should be able to flatten", function () {
         obsv.flatten()
-            .subscribe(listener);
+            .on("data", listener);
         obsv.send([1, 2, 3]);
 
         assert(listener.callCount === 3);
@@ -57,7 +57,7 @@ describe("Observable", function () {
         obsv.flatMap(function (str) {
             return str.split("");
         })
-            .subscribe(listener);
+            .on("data", listener);
         obsv.send("str");
 
         assert(listener.callCount === 3);
@@ -67,12 +67,12 @@ describe("Observable", function () {
     });
 
     it("should be able to async map", function () {
-        obsv.map(function (x, send) {
+        obsv.map(function (x, out) {
             setTimeout(function () {
-                send(x + 1)
+                out.send(x + 1)
             }, 1)
         })
-            .subscribe(listener);
+            .on("data", listener);
         obsv.send(10);
 
         clock.tick(100);
@@ -80,12 +80,12 @@ describe("Observable", function () {
     });
 
     it("should be able to async flatMap", function () {
-        obsv.flatMap(function (str, send) {
+        obsv.flatMap(function (str, out) {
             setTimeout(function () {
-                send(str.split(""))
+                out.send(str.split(""))
             }, 1)
         })
-            .subscribe(listener);
+            .on("data", listener);
 
         obsv.send("ok");
 
@@ -100,23 +100,94 @@ describe("Observable", function () {
         var s2 = Observable.create();
         var s3 = Observable.combine([s1, s2]);
 
-        s3.subscribe(listener);
+        s3.on("data", listener);
 
-        s1.send(1);
-        s2.send(2);
+        s1.send(1)
+          .send(2);
 
         assert(listener.callCount === 2);
         assert(listener.calledWith(1));
         assert(listener.calledWith(2));
     });
 
-    it("should be able to pipe Observables", function(){
-        var s1 = Observable.create();
-        var s2 = Observable.create();
-        s1.pipe(s2);
-        s2.subscribe(listener);
+    describe("piping", function(){
+        it("should be able to pipe 'data' signals", function(){
+            var s1 = Observable.create();
+            var s2 = Observable.create();
+            s1.pipe(s2);
+            s2.on("data", listener);
 
-        s1.send("hello");
-        assert(listener.calledWith("hello"));
+            s1.send("hello");
+
+            assert(listener.callCount === 1);
+            assert(listener.calledWith("hello"));
+        });
+
+        it("should be able to pipe 'end' signals", function(){
+            var s1 = Observable.create();
+            var s2 = Observable.create();
+            s1.pipe(s2);
+            s2.on("end", listener);
+
+            s1.end();
+            assert(listener.calledOnce);
+        });
+
+        it("should be able to pipe 'error' signals", function(){
+            var s1 = Observable.create();
+            var s2 = Observable.create();
+            s1.pipe(s2);
+            s2.on("error", listener);
+
+            s1.error();
+            assert(listener.calledOnce);
+        });
     });
+    describe("ending an observable", function(){
+        it("should be able to announce when done", function(){
+            obsv.on("end", listener);
+            obsv.send(1)
+                .send(2)
+                .end();
+
+            assert(listener.callCount === 1);
+            assert(listener.calledOnce);
+        });
+
+        it("should pass the 'end' signal to all mutations too", function(){
+            obsv
+                .flatten()
+                .map(function(x){return x+1;})
+                .on("end", listener);
+
+            obsv.end();
+
+            assert(listener.callCount === 1);
+            assert(listener.calledOnce);
+        });
+    });
+
+    describe("error handling", function(){
+        it("should be able to send error signals", function(){
+            obsv.on("error", listener);
+            obsv.error("error text");
+
+            assert(listener.callCount === 1);
+            assert(listener.calledWith("error text", obsv));
+        });
+
+        it("should pass the 'error' signal to all mutations too", function(){
+            obsv
+                .flatten()
+                .map(function(x){return x+1;})
+                .on("error", listener);
+
+            obsv.error("error text");
+
+            assert(listener.callCount === 1);
+            assert(listener.calledWith("error text", obsv));
+        });
+    });
+
+
 });
