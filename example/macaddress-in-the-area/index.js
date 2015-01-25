@@ -7,29 +7,33 @@ var WIRELESS_INTERFACE = "en0";
 var SUBNET = "10.0.0.0";
 
 
-var readingDump = command('tcpdump', ('-I -e -i ' + WIRELESS_INTERFACE).split(" "));
+/**
+ Some terms:
+ Destination Address (DA) : Final recipient of the frame
+ Source Address (SA) : Original source of the frame
+ Receiver Address (RA) : Immediate receiver of the frame.
+ Transmitter Address (TA) : Immediate sender of the frame.
+ */
 
-var raRequests = readingDump
-    .filter(contains(/RA\:/))
-    .map(extractRaMacAddress)
+var capturedFrames = command('tcpdump', ('-I -e -i ' + WIRELESS_INTERFACE).split(" "));
+
+var sourceAddressFromFrames = capturedFrames
+    .filter(contains(/SA\:/))
+    .map(extractSaMacAddress)
     .map(lookupMacAddressVendor);
 
 var ipsInNetwork = command("nmap", (SUBNET + "/24 -sn").split(" "))
     .filter(contains(/Nmap scan report for/))
     .map(extractIp);
 
-var beacons = readingDump
+var beacons = capturedFrames
     .filter(contains(/Beacon \((.+)\)/))
     .map(readBeaconName)
     .map(aggregateUnique(1000));
 
-raRequests.on("data", console.log);
-
-//beacons.on("data", function(data){
-//    process.stdout.write('\u001B[2J\u001B[0;0f');
-//    console.log("NETWORKS\n=================");
-//    console.log(data.join("\n"));
-//});
+sourceAddressFromFrames
+    .on("data", console.log)
+    .on("error", console.error);
 
 
 function readBeaconName(line) {
@@ -38,8 +42,8 @@ function readBeaconName(line) {
     return parts[1];
 }
 
-function extractRaMacAddress(line) {
-    var regex = /RA:([^ ]+)/;
+function extractSaMacAddress(line) {
+    var regex = /SA:([^ ]+)/;
     var parts = line.match(regex);
     return parts[1];
 }
