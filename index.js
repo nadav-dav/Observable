@@ -55,9 +55,13 @@ Observable.prototype.end = function () {
 /**
  * @param error
  * @param {Observable} root
- * @returns {Observable}
  */
-Observable.prototype.error = function (error, root) {
+Observable.prototype.error = function (error) {
+    this._error(error);
+    return this;
+};
+
+Observable.prototype._error = function (error, root) {
     if(root === undefined){
         root = this;
     }
@@ -65,7 +69,7 @@ Observable.prototype.error = function (error, root) {
         listener(error, root);
     });
     this._children.forEach(function (childObservable) {
-        childObservable.error(error, root);
+        childObservable._error(error, root);
     });
     return this;
 };
