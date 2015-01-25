@@ -1,6 +1,7 @@
+var rek = require("rekuire");
 var fs = require('fs');
 var readline = require('readline');
-var Observable = require("../../");
+var Observable = rek("Observable");
 var linesCounted = 0;
 
 // OUR MAGNIFICENT PIPE LINE

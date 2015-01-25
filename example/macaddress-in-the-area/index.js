@@ -1,6 +1,8 @@
+var rek = require("rekuire");
 var spawn = require('child_process').spawn;
 var readline = require('readline');
-var Observable = require("../../");
+var Observable = rek("Observable");
+rek("Observable.aggregate");
 var macvendor = require('macvendor');
 
 var WIRELESS_INTERFACE = "en0";
@@ -29,9 +31,9 @@ var ipsInNetwork = command("nmap", (SUBNET + "/24 -sn").split(" "))
 var beacons = capturedFrames
     .filter(contains(/Beacon \((.+)\)/))
     .map(readBeaconName)
-    .map(aggregateUnique(1000));
+    .aggregateByTime(2000, [], aggregateUnique);
 
-sourceAddressFromFrames
+beacons
     .on("data", console.log)
     .on("error", console.error);
 
@@ -61,21 +63,11 @@ function lookupMacAddressVendor(data, out) {
     });
 }
 
-function aggregateUnique(timeout) {
-    var collectedData = [];
-    var _out;
-    setInterval(function () {
-        if (_out) {
-            _out.send(collectedData.sort());
-            collectedData = [];
-        }
-    }, timeout);
-
-    return function (data, out) {
-        _out = out;
-        if (collectedData.indexOf(data) === -1) {
-            collectedData.push(data);
-        }
+function aggregateUnique(aggregator, data) {
+    if (aggregator.indexOf(data) === -1) {
+        return aggregator.concat(data);
+    } else {
+        return aggregator;
     }
 }
 

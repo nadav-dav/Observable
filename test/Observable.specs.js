@@ -1,4 +1,5 @@
-var Observable = require("../");
+var rek = require("rekuire");
+var Observable = rek("Observable");
 var assert = require('assert');
 var sinon = require('sinon');
 
@@ -188,6 +189,4 @@ describe("Observable", function () {
             assert(listener.calledWith("error text", obsv));
         });
     });
-
-
 });
