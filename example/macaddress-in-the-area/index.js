@@ -1,8 +1,10 @@
 var rek = require("rekuire");
 var spawn = require('child_process').spawn;
 var readline = require('readline');
+
+/** @type {Observable}*/
 var Observable = rek("Observable");
-rek("Observable.aggregate");
+
 var macvendor = require('macvendor');
 
 var WIRELESS_INTERFACE = "en0";
@@ -22,6 +24,11 @@ var capturedFrames = command('tcpdump', ('-I -e -i ' + WIRELESS_INTERFACE).split
 var sourceAddressFromFrames = capturedFrames
     .filter(contains(/SA\:/))
     .map(extractSaMacAddress)
+    .aggregateByTime(4000, [], aggregateUnique)
+    .flatten();
+
+var macAddressInTheAir = sourceAddressFromFrames
+    .map(toMacAddressObject)
     .map(lookupMacAddressVendor);
 
 var ipsInNetwork = command("nmap", (SUBNET + "/24 -sn").split(" "))
@@ -33,11 +40,18 @@ var beacons = capturedFrames
     .map(readBeaconName)
     .aggregateByTime(2000, [], aggregateUnique);
 
-beacons
+macAddressInTheAir
     .on("data", console.log)
     .on("error", console.error);
 
 
+function toMacAddressObject( mac){
+    return {
+        mac: mac,
+        lastDiscovered: Date.now(),
+        vendor: null
+    }
+}
 function readBeaconName(line) {
     var regex = /Beacon \((.+)\)/;
     var parts = line.match(regex);
@@ -50,22 +64,29 @@ function extractSaMacAddress(line) {
     return parts[1];
 }
 
+function extractRaMacAddress(line) {
+    var regex = /RA:([^ ]+)/;
+    var parts = line.match(regex);
+    return parts[1];
+}
+
 function extractIp(line) {
     var regex = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
     var parts = line.match(regex);
     return parts[1];
 }
 
-function lookupMacAddressVendor(data, out) {
-    macvendor(data, function (err, vendor) {
+function lookupMacAddressVendor(entry, out) {
+    macvendor(entry.mac, function (err, vendor) {
         if (err) return out.error(err);
-        out.send([data, vendor]);
+        entry.vendor = vendor;
+        out.send(entry);
     });
 }
 
 function aggregateUnique(aggregator, data) {
     if (aggregator.indexOf(data) === -1) {
-        return aggregator.concat(data);
+        return aggregator.concat([data]);
     } else {
         return aggregator;
     }

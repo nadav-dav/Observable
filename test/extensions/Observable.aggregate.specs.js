@@ -1,6 +1,6 @@
 var rek = require("rekuire");
+/** @type {Observable} */
 var Observable = rek("Observable");
-    rek("Observable.aggregate");
 var assert = require('assert');
 var sinon = require('sinon');
 
