@@ -2,7 +2,7 @@
   "name": "Observable",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "Observable.js",
   "scripts": {
     "test": "node_modules/.bin/mocha ./test"
   },
