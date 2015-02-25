@@ -1,7 +1,7 @@
 ```javascript
 var rek = require("rekuire");
+/** @type {Observable} */
 var Observable = rek("Observable");
-    rek("Observable.aggregate");
 var assert = require('assert');
 var sinon = require('sinon');
 
@@ -47,7 +47,7 @@ describe("Observable.aggregate", function () {
     });
 
     describe("aggregate by time", function () {
-        it("should be able to aggregate data calls into array", function () {
+        it("should be able to aggregate data by time calls into ", function () {
             obsv
                 .aggregateByTime(1000, [], function (aggregator, data) {
                     return aggregator.concat(data);
@@ -57,12 +57,15 @@ describe("Observable.aggregate", function () {
             obsv.send("hello");
             obsv.send("world");
             clock.tick(1000);
+
             obsv.send("foo");
             obsv.send("bar");
             clock.tick(1000);
+
             assert(listener.calledWith(["hello", "world"]));
             assert(listener.calledWith(["foo", "bar"]));
         });
     });
+
 });
 ```
